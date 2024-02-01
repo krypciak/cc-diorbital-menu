@@ -1,5 +1,6 @@
 import { Mod1 } from './types'
 import { quickMenuExtension } from './quick-menu-extension'
+import { addButtonEntries } from './buttonEntries'
 
 export default class QuickMenuExtensions {
     static dir: string
@@ -14,6 +15,7 @@ export default class QuickMenuExtensions {
 
     async prestart() {
         quickMenuExtension()
+        addButtonEntries()
     }
 
     async poststart() {}

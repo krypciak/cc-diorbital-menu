@@ -24,6 +24,12 @@ declare global {
         }
 
         namespace AdditionalRingButton {
+            type ImageConfig = () => {
+                gfx: ig.Image
+                pos: Vec2
+                srcPos: Vec2
+                size: Vec2
+            }
             type Config = {
                 name: string
                 pressEvent?: (button: sc.RingMenuButton) => void
@@ -33,20 +39,18 @@ declare global {
                 additionalInit?: (button: sc.RingMenuButton) => void
             } & (
                 | {
-                      image: {
-                          gfx: ig.Image
-                          pos: Vec2
-                          srcPos: Vec2
-                          size: Vec2
-                      }
+                      image: ImageConfig
+                      _imageDataCached: ReturnType<ImageConfig>
                   }
                 | {
                       draw: (renderer: ig.GuiRenderer, button: sc.RingMenuButton) => void
                   }
+                | {}
             )
         }
         interface QuickRingMenuConstructor {
             ringConfigs: Record<number, Record<number, sc.AdditionalRingButton.Config>>
+            addConfigFunctionList: (() => void)[]
         }
     }
 }
@@ -99,52 +103,7 @@ function setDefaultConfig() {
     }
 }
 
-// prettier-ignore
-const characterList = ['apollo', 'buggy', 'emilie', 'glasses', 'grumpy', 'hlin', 'joern', 'lea', 'luke', 'schneider', 'schneider2', 'sergey', 'shizuka', 'triblader1']
-function preloadChars() {
-    characterList.forEach(name => new sc.PlayerConfig(name))
-}
-function addCustomEntries() {
-    function getPlayerHeadConfig(playerName: string) {
-        const headIdx = new sc.PlayerConfig(playerName).headIdx
-        return {
-            gfx: new ig.Image('media/gui/severed-heads.png'),
-            pos: { x: 4, y: 1 },
-            srcPos: { x: headIdx * 24, y: 0 },
-            size: { x: 24, y: 24 },
-        }
-    }
-    let id = -1
-    function createButtonConfig(): sc.AdditionalRingButton.Config {
-        currentCharIndex = (currentCharIndex + 1) % characterList.length
-        id++
-        const newId = id
-        return {
-            name: `button${newId}`,
-            pressEvent: _button => {
-                console.log(`button${newId}`)
-            },
-            keepPressed: false,
-            image: getPlayerHeadConfig(characterList[currentCharIndex]),
-        }
-    }
-    let currentCharIndex = 0
-    function createRing(ringIndex: number, toAdd: number, step: number = 1, offset: number = 0) {
-        const ring: Record<number, sc.AdditionalRingButton.Config> = (sc.QuickRingMenu.ringConfigs[ringIndex] ??= {})
-        const maxSize = getRingMaxSize(ringIndex)
-        for (let i = offset, added = 0; i < maxSize && added < toAdd; i += step) {
-            if (ring[i]) continue
-            ring[i] = createButtonConfig()
-            added++
-        }
-    }
-    createRing(0, 4)
-    createRing(1, 8, 4, 1)
-    createRing(2, 8, 4, 3)
-    createRing(3, 8, 4, 5)
-}
-
-function getRingMaxSize(ring: number) {
+export function getRingMaxSize(ring: number) {
     return (ring + 1) * 8
 }
 
@@ -181,14 +140,13 @@ export function quickMenuExtension() {
         },
     })
 
-    sc.QuickRingMenu.ringConfigs = {}
+    sc.QuickRingMenu.ringConfigs = { 0: {}, 1: {}, 2: {}, 3: {}, 4: {} }
+    sc.QuickRingMenu.addConfigFunctionList = []
     setDefaultConfig()
-
-    preloadChars()
 
     sc.QuickRingMenu.inject({
         init() {
-            addCustomEntries()
+            sc.QuickRingMenu.addConfigFunctionList.forEach(f => f())
             this.currentRingIndex = 0
             quickRingMenuIns = this
             this.parent()
@@ -218,6 +176,7 @@ export function quickMenuExtension() {
                     } else if (this.currentRingIndex >= this.highestRingIndex + 1) {
                         this.currentRingIndex = 0
                     }
+                    ;(sc.BUTTON_SOUND.submit as ig.SoundWebAudio).play()
                 }
             }
         },
@@ -310,9 +269,11 @@ export function quickMenuExtension() {
                     : this.pressed && renderer.addGfx(this.gfx, 0, 0, 400, 336, 32, 32)
                 : this.focus && renderer.addGfx(this.gfx, 0, 0, 400, 272, 32, 32)
             /* stolen end */
-            if (!conf || !conf.image) return
-            const { pos, srcPos, size } = conf.image
-            renderer.addGfx(conf.image.gfx, pos.x, pos.y, srcPos.x, srcPos.y, size.x, size.y)
+            if (!conf || !('image' in conf)) return
+
+            let data = (conf._imageDataCached ??= conf.image())
+            const { pos, srcPos, size } = data
+            renderer.addGfx(data.gfx, pos.x, pos.y, srcPos.x, srcPos.y, size.x, size.y)
         },
     })
 }
