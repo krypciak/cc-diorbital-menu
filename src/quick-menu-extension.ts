@@ -1,7 +1,10 @@
 declare global {
     namespace sc {
         interface QuickMenuButtonGroup extends ig.ButtonGroup {
+            lastDir: Vec2
+
             setButtons(this: this, ...buttons: sc.RingMenuButton[]): void
+            doButtonTraversal(this: this, focusRegained?: boolean, dirOverride?: Vec2): void
         }
         interface RingMenuButton {
             ringPos: { ring: number; index: number }
@@ -114,13 +117,13 @@ export function quickMenuExtension() {
         setButtons(...args) {
             args.forEach((btn, i) => btn && this.addFocusGui(btn as ig.FocusGui, 0, i + 1))
         },
-
-        doButtonTraversal(inputRegained) {
-            if (!inputRegained) {
+        doButtonTraversal(inputRegained, dirOverride?: Vec2) {
+            if (!inputRegained || dirOverride) {
                 sc.control.menuConfirm() && this.invokeCurrentButton()
 
-                const dirVec: Vec2 = Vec2.createC(ig.gamepad.getAxesValue(ig.AXES.LEFT_STICK_X), ig.gamepad.getAxesValue(ig.AXES.LEFT_STICK_Y))
+                const dirVec: Vec2 = dirOverride ?? Vec2.createC(ig.gamepad.getAxesValue(ig.AXES.LEFT_STICK_X), ig.gamepad.getAxesValue(ig.AXES.LEFT_STICK_Y))
                 if (Vec2.isZero(dirVec)) return
+                this.lastDir = dirVec
 
                 const angles = quickRingMenuIns.rings[quickRingMenuIns.currentRingIndex]?.angles
                 if (!angles) return
@@ -170,12 +173,16 @@ export function quickMenuExtension() {
             if (sc.quickmodel.activeState && sc.quickmodel.isQuickNone()) {
                 const add = ig.gamepad.isButtonPressed(ig.BUTTONS.LEFT_SHOULDER) ? -1 : ig.gamepad.isButtonPressed(ig.BUTTONS.RIGHT_SHOULDER) ? 1 : 0
                 if (add != 0) {
-                    this.currentRingIndex += add
-                    if (this.currentRingIndex < 0) {
-                        this.currentRingIndex = this.highestRingIndex
-                    } else if (this.currentRingIndex >= this.highestRingIndex + 1) {
-                        this.currentRingIndex = 0
-                    }
+                    do {
+                        this.currentRingIndex += add
+                        if (this.currentRingIndex < 0) {
+                            this.currentRingIndex = this.highestRingIndex
+                        } else if (this.currentRingIndex >= this.highestRingIndex + 1) {
+                            this.currentRingIndex = 0
+                        }
+                    } while (Object.keys(this.rings[this.currentRingIndex].buttons).length == 0)
+
+                    this.buttongroup.doButtonTraversal(false, this.buttongroup.lastDir)
                     ;(sc.BUTTON_SOUND.submit as ig.SoundWebAudio).play()
                 }
             }
