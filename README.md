@@ -2,10 +2,18 @@
 
 # Quick menu extension
 
-![image](https://github.com/krypciak/cc-quick-menu-ext/assets/115574014/92c6cf1b-a18c-4e5c-a6e3-b3d819242b0b)
+
+https://github.com/krypciak/cc-diorbital-menu/assets/115574014/a359412f-6359-481c-bc80-d7be821e1970
+
+
+
 
 The action button is right click or press X on gamepad.  
 To switch rings on gamepad, use L1 and R1.  
+
+### Mods that add more widgets
+- [cc-vim](https://github.com/krypciak/cc-vim) add some useful widgets for mod developers
+- [cc-speedrun-utilities](https://github.com/CCDirectLink/cc-speedrun-utilities) add speedrun related widgets
 
 # For developers
 
