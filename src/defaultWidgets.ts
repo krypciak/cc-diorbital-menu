@@ -8,7 +8,7 @@ export function addDefaultWidgeds() {
         })
     }
 
-    sc.QuickRingMenu.addWidget({
+    sc.QuickRingMenuWidgets.addWidget({
         key: '11_items',
         name: 'items',
         title: 'Items',
@@ -19,7 +19,7 @@ export function addDefaultWidgeds() {
             button.addChildGui(new sc.ItemTimerOverlay(button))
         },
     })
-    sc.QuickRingMenu.addWidget({
+    sc.QuickRingMenuWidgets.addWidget({
         key: '11_analyze',
         name: 'analyze',
         title: 'Analysis',
@@ -29,7 +29,7 @@ export function addDefaultWidgeds() {
             sc.QuickRingMenu.instance.check = button
         },
     })
-    sc.QuickRingMenu.addWidget({
+    sc.QuickRingMenuWidgets.addWidget({
         key: '11_party',
         name: 'party',
         title: 'Party',
@@ -39,7 +39,7 @@ export function addDefaultWidgeds() {
             sc.QuickRingMenu.instance.party = button
         },
     })
-    sc.QuickRingMenu.addWidget({
+    sc.QuickRingMenuWidgets.addWidget({
         key: '11_map',
         name: 'map',
         title: 'Map',

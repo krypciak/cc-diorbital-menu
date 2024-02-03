@@ -1,5 +1,5 @@
 import { addDefaultWidgeds } from './defaultWidgets'
-import './global'
+import './global.d.ts'
 
 declare global {
     namespace sc {
@@ -32,11 +32,13 @@ declare global {
             hideDummyButtons(this: this): void
             nextRing(this: this, add: number): void
         }
-        interface QuickRingMenuConstructor {
+        interface QuickRingMenuWidgets {
             ringConfiguration: Record<number, string>
             widgets: Record<string, sc.QuickMenuWidget>
-            instance: QuickRingMenu
             addConfigFunctionList: (() => void)[]
+        }
+        interface QuickRingMenuConstructor {
+            instance: QuickRingMenu
         }
     }
 }
@@ -62,7 +64,7 @@ function getRingPosFromId(id: number) {
 }
 
 function getWidgetFromId(id: number) {
-    return sc.QuickRingMenu.widgets[sc.QuickRingMenu.ringConfiguration[id]]
+    return sc.QuickRingMenuWidgets.widgets[sc.QuickRingMenuWidgets.ringConfiguration[id]]
 }
 
 const ringCountToInit = 4
@@ -73,7 +75,7 @@ for (let ring = 0; ring < ringCountToInit; ring++) {
 }
 
 function getAllIdsFromRing(ring: number) {
-    return Object.keys(sc.QuickRingMenu.ringConfiguration)
+    return Object.keys(sc.QuickRingMenuWidgets.ringConfiguration)
         .map(Number)
         .filter(id => getRingPosFromId(id).ring == ring)
 }
@@ -118,7 +120,7 @@ function patchButtonTraversal() {
 
 const localStorageConfigId = 'quickMenuConfig'
 function saveConfig(possibleSelGridIds: number[]) {
-    const save = { ...sc.QuickRingMenu.ringConfiguration }
+    const save = { ...sc.QuickRingMenuWidgets.ringConfiguration }
     for (const id of possibleIds) {
         const name = save[id]
         if (name.startsWith('dummy')) delete save[id]
@@ -126,8 +128,8 @@ function saveConfig(possibleSelGridIds: number[]) {
     for (const id of possibleSelGridIds) delete save[id]
     localStorage.setItem(localStorageConfigId, JSON.stringify(save))
 }
-function loadConfig() {
-    sc.QuickRingMenu.ringConfiguration = JSON.parse(
+function loadConfig(): Record<number, string> {
+    return JSON.parse(
         localStorage.getItem(localStorageConfigId) ??
             JSON.stringify({
                 [getIdFromRingPos(0, 0)]: 'items',
@@ -139,22 +141,26 @@ function loadConfig() {
 }
 
 export function initExtensionVars() {
-    sc.QuickRingMenu.widgets = {}
-    sc.QuickRingMenu.addWidget = (widget: sc.QuickMenuWidget) => {
-        const key = widget.key ?? widget.name
-        if (sc.QuickRingMenu.widgets[key]) throw new Error(`Widget: "${widget.key}" already assigned.`)
-        sc.QuickRingMenu.widgets[key] = widget
-    }
-    sc.QuickRingMenu.addConfigFunctionList = []
-    sc.QuickRingMenu.addFunctionBeforeInit = func => {
-        sc.QuickRingMenu.addConfigFunctionList.push(func)
+    // @ts-expect-error
+    window.sc = {}
+    sc.QuickRingMenuWidgets = {
+        widgets: {},
+        addWidget: (widget: sc.QuickMenuWidget) => {
+            const key = widget.key ?? widget.name
+            if (sc.QuickRingMenuWidgets.widgets[key]) throw new Error(`Widget: "${widget.key}" already assigned.`)
+            sc.QuickRingMenuWidgets.widgets[key] = widget
+        },
+
+        addConfigFunctionList: [],
+        addFunctionBeforeInit: func => {
+            sc.QuickRingMenuWidgets.addConfigFunctionList.push(func)
+        },
+        ringConfiguration: loadConfig(),
     }
 }
 
 export function quickMenuExtension() {
     /* in prestart */
-
-    loadConfig()
 
     patchButtonTraversal()
 
@@ -162,7 +168,7 @@ export function quickMenuExtension() {
 
     sc.QuickRingMenu.inject({
         init() {
-            sc.QuickRingMenu.addConfigFunctionList.forEach(f => f())
+            sc.QuickRingMenuWidgets.addConfigFunctionList.forEach(f => f())
 
             sc.QuickRingMenu.instance = this
             this.ringAngles = {}
@@ -184,11 +190,11 @@ export function quickMenuExtension() {
             /* the last ring is not accually a ring, but a selection "menu" */
             const selW = 4
             const selGridPos: Vec2 = { x: 207, y: -80 }
-            this.possibleSelGridIds = Object.keys(sc.QuickRingMenu.widgets)
+            this.possibleSelGridIds = Object.keys(sc.QuickRingMenuWidgets.widgets)
                 .sort()
                 .map((name, i) => {
                     const id = getIdFromRingPos(ringCountToInit, i)
-                    sc.QuickRingMenu.ringConfiguration[id] = name
+                    sc.QuickRingMenuWidgets.ringConfiguration[id] = name
                     const y = Math.floor(i / selW)
                     const x = (i % selW) + (y % 2) / 2
                     const position = Vec2.create(selGridPos)
@@ -255,21 +261,21 @@ export function quickMenuExtension() {
                         const fromB = this.selectedToMoveButton
                         const toB = focusedButton
                         if (toB) {
-                            let fromWidget: string = sc.QuickRingMenu.ringConfiguration[fromB.ringId]
-                            let toWidget: string = sc.QuickRingMenu.ringConfiguration[toB.ringId]
+                            let fromWidget: string = sc.QuickRingMenuWidgets.ringConfiguration[fromB.ringId]
+                            let toWidget: string = sc.QuickRingMenuWidgets.ringConfiguration[toB.ringId]
 
                             const fromRing: number = getRingPosFromId(fromB.ringId).ring
                             const toRing: number = getRingPosFromId(toB.ringId).ring
                             if (fromRing == ringCountToInit) {
                                 if (toRing != ringCountToInit) {
-                                    sc.QuickRingMenu.ringConfiguration[toB.ringId] = fromWidget
+                                    sc.QuickRingMenuWidgets.ringConfiguration[toB.ringId] = fromWidget
                                 }
                             } else {
                                 if (toRing == ringCountToInit) {
-                                    sc.QuickRingMenu.ringConfiguration[fromB.ringId] = `dummy${fromB.ringId}`
+                                    sc.QuickRingMenuWidgets.ringConfiguration[fromB.ringId] = `dummy${fromB.ringId}`
                                 } else {
-                                    sc.QuickRingMenu.ringConfiguration[fromB.ringId] = toWidget
-                                    sc.QuickRingMenu.ringConfiguration[toB.ringId] = fromWidget
+                                    sc.QuickRingMenuWidgets.ringConfiguration[fromB.ringId] = toWidget
+                                    sc.QuickRingMenuWidgets.ringConfiguration[toB.ringId] = fromWidget
                                 }
                             }
 
@@ -312,11 +318,11 @@ export function quickMenuExtension() {
             const needToInitialze = new Set<string>(['11_items', '11_analyze', '11_party', '11_map'])
 
             for (const id of [...possibleIds, ...(this.editModeOn ? this.possibleSelGridIds : [])]) {
-                const widgetName = sc.QuickRingMenu.ringConfiguration[id]
+                const widgetName = sc.QuickRingMenuWidgets.ringConfiguration[id]
                 if (!widgetName) continue
-                const widget = sc.QuickRingMenu.widgets[widgetName]
+                const widget = sc.QuickRingMenuWidgets.widgets[widgetName]
                 if (!widget) {
-                    delete sc.QuickRingMenu.ringConfiguration[id]
+                    delete sc.QuickRingMenuWidgets.ringConfiguration[id]
                     continue
                 }
                 const button = this.createButton(widget)
@@ -327,7 +333,7 @@ export function quickMenuExtension() {
                 needToInitialze.delete(widgetName)
             }
 
-            for (const name of needToInitialze) this.createButton(sc.QuickRingMenu.widgets[name])
+            for (const name of needToInitialze) this.createButton(sc.QuickRingMenuWidgets.widgets[name])
 
             this.buttongroup.setButtons(...this.buttons)
         },
@@ -345,7 +351,7 @@ export function quickMenuExtension() {
         showDummyButtons() {
             if (!this.dummyButtonsCreated) {
                 for (const id of possibleIds) {
-                    sc.QuickRingMenu.addWidget({
+                    sc.QuickRingMenuWidgets.addWidget({
                         name: `dummy${id}`,
                         title: `Replacement button ${id}`,
                         description: '',
@@ -354,17 +360,17 @@ export function quickMenuExtension() {
                 this.dummyButtonsCreated = true
             }
             for (const id of possibleIds) {
-                if (sc.QuickRingMenu.ringConfiguration[id]) continue
-                sc.QuickRingMenu.ringConfiguration[id] = `dummy${id}`
+                if (sc.QuickRingMenuWidgets.ringConfiguration[id]) continue
+                sc.QuickRingMenuWidgets.ringConfiguration[id] = `dummy${id}`
             }
             this.createButtons()
         },
         hideDummyButtons() {
             let anyHidden = false
             for (const id of possibleIds) {
-                const widgetName = sc.QuickRingMenu.ringConfiguration[id]
+                const widgetName = sc.QuickRingMenuWidgets.ringConfiguration[id]
                 if (widgetName && widgetName.startsWith('dummy')) {
-                    delete sc.QuickRingMenu.ringConfiguration[id]
+                    delete sc.QuickRingMenuWidgets.ringConfiguration[id]
                     anyHidden = true
                 }
             }
@@ -383,7 +389,7 @@ export function quickMenuExtension() {
             focusedButton = undefined
         },
         updateDrawables(renderer) {
-            const widget = sc.QuickRingMenu.widgets[sc.QuickRingMenu.ringConfiguration[this.ringId]]
+            const widget = sc.QuickRingMenuWidgets.widgets[sc.QuickRingMenuWidgets.ringConfiguration[this.ringId]]
             // if ('draw' in widget) return widget.draw(renderer, this)
             /* stolen */
             renderer.addGfx(this.gfx, 0, 0, 400, 304, 32, 32)

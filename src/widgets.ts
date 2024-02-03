@@ -11,11 +11,11 @@ export function addWidgets() {
             }
         }
     }
-    sc.QuickRingMenu.addFunctionBeforeInit(() => {
+    sc.QuickRingMenuWidgets.addFunctionBeforeInit(() => {
         for (let i = 0; i < sc.PARTY_OPTIONS.length; i++) {
             const playerName = sc.PARTY_OPTIONS[i]
             const image = getPlayerHeadConfig(playerName)
-            sc.QuickRingMenu.addWidget({
+            sc.QuickRingMenuWidgets.addWidget({
                 title: `charSelect${playerName}`,
                 name: playerName,
                 description: `Click to play as ${playerName}`,
