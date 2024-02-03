@@ -39,6 +39,21 @@ if (sc.QuickRingMenuWidgets) {
 }
 ```
 
+## Typescript setup
+Run
+```bash
+npm install -d krypciak/cc-diorbital-menu
+```
+Then add this to your `tsconfig.json`:
+```json
+{
+    "include": [
+        "node_modules/cc-quick-menu-ext/src/global.d.ts"
+    ]
+}
+```
+Add this entry to the `include` array, don't entirely replace it.  
+
 ## Building
 
 ```bash
