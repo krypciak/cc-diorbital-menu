@@ -22,6 +22,7 @@ export function addWidgets() {
             pressEvent: () => {
                 const config = sc.party.models[playerName].config
                 sc.model.player.setConfig(config)
+                ig.ENTITY.Combatant.prototype.update.call(ig.game.playerEntity)
             },
         })
     }
