@@ -190,10 +190,10 @@ function loadConfig(): Record<number, string> {
     return JSON.parse(
         localStorage.getItem(localStorageConfigId) ??
             JSON.stringify({
-                [getIdFromRingPos(0, 0)]: 'items',
-                [getIdFromRingPos(0, 2)]: 'analyze',
-                [getIdFromRingPos(0, 4)]: 'party',
-                [getIdFromRingPos(0, 6)]: 'map',
+                [getIdFromRingPos(0, 0)]: '11_items',
+                [getIdFromRingPos(0, 2)]: '11_analyze',
+                [getIdFromRingPos(0, 4)]: '11_party',
+                [getIdFromRingPos(0, 6)]: '11_map',
             })
     )
 }
