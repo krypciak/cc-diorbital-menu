@@ -1,6 +1,6 @@
 import { Mod1 } from './types'
-import { quickMenuExtension } from './quick-menu-extension'
-import { addButtonEntries } from './buttonEntries'
+import { initExtensionVars, quickMenuExtension } from './quick-menu-extension'
+import { addWidgets } from './widgets'
 
 export default class QuickMenuExtensions {
     static dir: string
@@ -11,11 +11,13 @@ export default class QuickMenuExtensions {
         QuickMenuExtensions.mod = mod
         QuickMenuExtensions.mod.isCCL3 = mod.findAllAssets ? true : false
         QuickMenuExtensions.mod.isCCModPacked = mod.baseDirectory.endsWith('.ccmod/')
+
+        initExtensionVars()
     }
 
     async prestart() {
         quickMenuExtension()
-        addButtonEntries()
+        addWidgets()
     }
 
     async poststart() {}
