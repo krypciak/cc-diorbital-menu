@@ -107,13 +107,13 @@ function patchButtonTraversal() {
         },
         getRepeaterDir(dirVec) {
             if (dirVec.x > 0.7) return 'e'
-            if (dirVec.x > 0.4 && dirVec.y > 0.4) return 'se'
+            // if (dirVec.x > 0.4 && dirVec.y > 0.4) return 'se'
             if (dirVec.y > 0.7) return 's'
-            if (dirVec.x < -0.4 && dirVec.y > 0.4) return 'sw'
+            // if (dirVec.x < -0.4 && dirVec.y > 0.4) return 'sw'
             if (dirVec.x < -0.7) return 'w'
-            if (dirVec.x < -0.4 && dirVec.y < -0.4) return 'nw'
+            // if (dirVec.x < -0.4 && dirVec.y < -0.4) return 'nw'
             if (dirVec.y < -0.7) return 'n'
-            if (dirVec.y < -0.4 && dirVec.x > 0.4) return 'ne'
+            // if (dirVec.y < -0.4 && dirVec.x > 0.4) return 'ne'
         },
         getRepeaterValue(dirVec: Vec2) {
             const dir = this.getRepeaterDir(dirVec)
@@ -124,9 +124,9 @@ function patchButtonTraversal() {
             if (dir == 'n') return id - selGridW * 2
             if (dir == 'ne') return id - selGridW + 1
             if (dir == 'e') return id + 1
-            if (dir == 'se') return id + selGridW + 1
+            if (dir == 'se') return id + selGridW
             if (dir == 's') return id + selGridW * 2
-            if (dir == 'sw') return id + selGridW
+            if (dir == 'sw') return id + selGridW - 1
             if (dir == 'w') return id - 1
             if (dir == 'nw') return id - selGridW
             throw new Error()
