@@ -1,11 +1,11 @@
 <!-- markdownlint-disable MD013 MD024 MD001 MD045 -->
 
-# Quick menu extensions library
+# Quick menu extension
 
 ![image](https://github.com/krypciak/cc-quick-menu-ext/assets/115574014/92c6cf1b-a18c-4e5c-a6e3-b3d819242b0b)
 
-To add a new widget, right click (or press X on gamepad).  
-
+The action button is right click or press X on gamepad.  
+To switch rings on gamepad, use L1 and R1.  
 
 # For developers
 
