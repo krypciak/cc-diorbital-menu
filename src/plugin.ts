@@ -17,8 +17,9 @@ export default class QuickMenuExtensions {
 
     async prestart() {
         quickMenuExtension()
-        addWidgets()
     }
 
-    async poststart() {}
+    async poststart() {
+        addWidgets()
+    }
 }

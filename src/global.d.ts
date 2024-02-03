@@ -27,7 +27,6 @@ declare global {
 
         interface QuickRingMenuWidgets {
             addWidget(widget: sc.QuickMenuWidget): void
-            addFunctionBeforeInit(func: () => void): void
         }
         var QuickRingMenuWidgets: QuickRingMenuWidgets
     }

@@ -18,6 +18,7 @@ declare global {
         interface RingMenuButton {
             title: string
             ringId: number
+            isOn?: boolean
         }
 
         interface QuickRingMenu {
@@ -27,8 +28,11 @@ declare global {
             dummyButtonsCreated?: boolean
             possibleSelGridIds: number[]
             editModeOn: boolean
+            openendAtLeastOnce: boolean
 
+            onWidgetListUpdate(this: this): void
             createButton(this: this, widget: sc.QuickMenuWidget): sc.RingMenuButton
+            createButtons(this: this, initAll?: boolean): void
             setButtonId(this: this, button: sc.RingMenuButton, id: number): void
             enterEditMode(this: this): void
             exitEditMode(this: this): void
@@ -39,7 +43,6 @@ declare global {
         interface QuickRingMenuWidgets {
             ringConfiguration: Record<number, string>
             widgets: Record<string, sc.QuickMenuWidget>
-            addConfigFunctionList: (() => void)[]
         }
         interface QuickRingMenuConstructor {
             instance: QuickRingMenu
@@ -71,7 +74,7 @@ function getWidgetFromId(id: number) {
     return sc.QuickRingMenuWidgets.widgets[sc.QuickRingMenuWidgets.ringConfiguration[id]]
 }
 
-const ringCountToInit = 4
+const ringCountToInit = 3
 const possibleIds: number[] = []
 for (let ring = 0; ring < ringCountToInit; ring++) {
     const maxSize = getRingMaxSize(ring)
@@ -202,13 +205,8 @@ export function initExtensionVars() {
         widgets: {},
         addWidget: (widget: sc.QuickMenuWidget) => {
             const key = widget.key ?? widget.name
-            if (sc.QuickRingMenuWidgets.widgets[key]) throw new Error(`Widget: "${widget.key}" already assigned.`)
+            if (sc.QuickRingMenuWidgets.widgets[key]) throw new Error(`Widget: "${key}" already assigned.`)
             sc.QuickRingMenuWidgets.widgets[key] = widget
-        },
-
-        addConfigFunctionList: [],
-        addFunctionBeforeInit: func => {
-            sc.QuickRingMenuWidgets.addConfigFunctionList.push(func)
         },
         ringConfiguration: loadConfig(),
     }
@@ -223,14 +221,13 @@ export function quickMenuExtension() {
 
     sc.QuickRingMenu.inject({
         init() {
-            sc.QuickRingMenuWidgets.addConfigFunctionList.forEach(f => f())
-
             sc.QuickRingMenu.instance = this
-            this.ringAngles = {}
+            this.openendAtLeastOnce = false
 
             this.currentRingIndex = -1
             this.nextRing(1)
 
+            this.ringAngles = {}
             for (let ring = 0; ring < ringCountToInit; ring++) {
                 const multiplier = (ring + 1) * 35
                 const maxSize = getRingMaxSize(ring)
@@ -242,6 +239,17 @@ export function quickMenuExtension() {
                 }
             }
 
+            this.parent()
+            this.buttongroup.addPressCallback(button1 => {
+                const button = button1 as sc.RingMenuButton
+                const config = getWidgetFromId(button.ringId)
+                if (config?.pressEvent) {
+                    config.pressEvent(button)
+                    // this._unfocusAll()
+                }
+            })
+        },
+        onWidgetListUpdate() {
             /* the last ring is not accually a ring, but a selection "menu" */
             const selGridPos: Vec2 = { x: 207, y: -80 }
             this.possibleSelGridIds = Object.keys(sc.QuickRingMenuWidgets.widgets)
@@ -256,16 +264,6 @@ export function quickMenuExtension() {
                     this.ringAngles[id] = { pure: Vec2.create() /* the last ring is a grid, not a ring */, position }
                     return id
                 })
-
-            this.parent()
-            this.buttongroup.addPressCallback(button1 => {
-                const button = button1 as sc.RingMenuButton
-                const config = getWidgetFromId(button.ringId)
-                if (config?.pressEvent) {
-                    config.pressEvent(button)
-                    this._unfocusAll()
-                }
-            })
         },
         enter() {
             this.parent()
@@ -273,6 +271,10 @@ export function quickMenuExtension() {
             this.exitEditMode()
             this.currentRingIndex = -1
             this.nextRing(1)
+            if (!this.openendAtLeastOnce) {
+                this.createButtons(true)
+                this.openendAtLeastOnce = true
+            }
         },
         nextRing(add) {
             let maxIte = 10
@@ -353,7 +355,7 @@ export function quickMenuExtension() {
             button.endPosActive.y = Math.floor(defaultAngle.y - 16) + 5
 
             widget.additionalInit && widget.additionalInit(button)
-            widget.keepPressed !== undefined && (button.keepPressed = widget.keepPressed)
+            button.keepPressed = !!widget.keepPressed
 
             return button
         },
@@ -363,32 +365,31 @@ export function quickMenuExtension() {
             button.setPos(button.endPos.x, button.endPos.y)
             button.ringId = id
         },
-        createButtons() {
+        createButtons(initAll: boolean = false) {
+            if (!initAll /* this is false only on the first call by the QuickRingMenu init() function */) {
+                /* we only need to init the vanilla buttons */
+                for (const widgetName of ['11_items', '11_analyze', '11_party', '11_map']) {
+                    this.createButton(sc.QuickRingMenuWidgets.widgets[widgetName])
+                }
+                return
+            }
             if (this.buttons) for (const button of this.buttons) this.removeChildGui(button)
             this.buttons = []
             for (let i = 0; i < this.buttongroup.elements[0].length; i++) this.buttongroup.removeFocusGui(0, i)
-
-            /* these default buttons have to be initialized even if they're not displayed (they game will cry otherwise )*/
-            /* the !!_ are so they appear at the top of the widget grid */
-            const needToInitialze = new Set<string>(['11_items', '11_analyze', '11_party', '11_map'])
 
             for (const id of [...possibleIds, ...(this.editModeOn ? this.possibleSelGridIds : [])]) {
                 const widgetName = sc.QuickRingMenuWidgets.ringConfiguration[id]
                 if (!widgetName) continue
                 const widget = sc.QuickRingMenuWidgets.widgets[widgetName]
                 if (!widget) {
-                    delete sc.QuickRingMenuWidgets.ringConfiguration[id]
+                    if (initAll) delete sc.QuickRingMenuWidgets.ringConfiguration[id]
                     continue
                 }
                 const button = this.createButton(widget)
                 this.setButtonId(button, id)
                 this.addChildGui(button)
                 this.buttons.push(button)
-
-                needToInitialze.delete(widgetName)
             }
-
-            for (const name of needToInitialze) this.createButton(sc.QuickRingMenuWidgets.widgets[name])
 
             this.buttongroup.setButtons(...this.buttons)
         },
@@ -405,6 +406,7 @@ export function quickMenuExtension() {
         },
         showDummyButtons() {
             if (!this.dummyButtonsCreated) {
+                this.onWidgetListUpdate()
                 for (const id of possibleIds) {
                     sc.QuickRingMenuWidgets.addWidget({
                         name: `dummy${id}`,
@@ -418,7 +420,7 @@ export function quickMenuExtension() {
                 if (sc.QuickRingMenuWidgets.ringConfiguration[id]) continue
                 sc.QuickRingMenuWidgets.ringConfiguration[id] = `dummy${id}`
             }
-            this.createButtons()
+            this.createButtons(true)
         },
         hideDummyButtons() {
             let anyHidden = false
@@ -429,12 +431,19 @@ export function quickMenuExtension() {
                     anyHidden = true
                 }
             }
-            anyHidden && this.createButtons()
+            anyHidden && this.createButtons(true)
         },
     })
 
     let focusedButton: sc.RingMenuButton | undefined
     sc.RingMenuButton.inject({
+        init(state, endPosX, endPosY) {
+            this.parent(state, endPosX, endPosY)
+        },
+        invokeButtonPress() {
+            this.parent()
+            if (this.keepPressed) this.isOn = !this.isOn
+        },
         focusGained() {
             this.parent()
             focusedButton = this
@@ -448,11 +457,15 @@ export function quickMenuExtension() {
             // if ('draw' in widget) return widget.draw(renderer, this)
             /* stolen */
             renderer.addGfx(this.gfx, 0, 0, 400, 304, 32, 32)
-            this.active
-                ? this.focus
-                    ? renderer.addGfx(this.gfx, 0, 0, 400, 336, 32, 32).setAlpha(this.alpha)
-                    : this.pressed && renderer.addGfx(this.gfx, 0, 0, 400, 336, 32, 32)
-                : this.focus && renderer.addGfx(this.gfx, 0, 0, 400, 272, 32, 32)
+            if (this.active) {
+                if (this.focus) {
+                    renderer.addGfx(this.gfx, 0, 0, 400, 336, 32, 32).setAlpha(this.alpha)
+                } else {
+                    if (this.pressed || this.isOn) renderer.addGfx(this.gfx, 0, 0, 400, 336, 32, 32)
+                }
+            } else {
+                if (this.focus) renderer.addGfx(this.gfx, 0, 0, 400, 272, 32, 32)
+            }
             /* stolen end */
             if (!('image' in widget)) return
 
