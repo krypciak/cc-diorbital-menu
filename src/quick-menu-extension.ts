@@ -4,11 +4,16 @@ import './global.d.ts'
 declare global {
     namespace sc {
         interface QuickMenuButtonGroup extends ig.ButtonGroup {
+            repeater: ig.PressRepeater
             lastDir: Vec2
             elements: sc.RingMenuButton[][]
 
             setButtons(this: this, ...buttons: sc.RingMenuButton[]): void
             doButtonTraversal(this: this, focusRegained?: boolean, dirOverride?: Vec2): void
+            focusButtonByRingId(this: this, ringId: number): void
+            getRepeaterDir(this: this, dirVec: Vec2): string | undefined
+            getRepeaterValue(this: this, dirVec: Vec2): string | null
+            getRingIdFromDir(this: this, dir: string, id: number): number
         }
         interface RingMenuButton {
             title: string
@@ -20,7 +25,6 @@ declare global {
             ringAngles: Record<number, { pure: Vec2; position: Vec2 }>
             selectedToMoveButton?: sc.RingMenuButton
             dummyButtonsCreated?: boolean
-            availibleWidgetsButtonGroup: sc.QuickMenuButtonGroup
             possibleSelGridIds: number[]
             editModeOn: boolean
 
@@ -75,15 +79,57 @@ for (let ring = 0; ring < ringCountToInit; ring++) {
 }
 
 function getAllIdsFromRing(ring: number) {
-    return Object.keys(sc.QuickRingMenuWidgets.ringConfiguration)
-        .map(Number)
-        .filter(id => getRingPosFromId(id).ring == ring)
+    const keys = Object.keys(sc.QuickRingMenuWidgets.ringConfiguration)
+    const mapped = keys.map(Number)
+    const filtered = mapped.filter(id => getRingPosFromId(id).ring == ring)
+    return filtered
 }
+
+const selGridW = 4
 
 function patchButtonTraversal() {
     sc.QuickMenuButtonGroup.inject({
+        init() {
+            this.parent()
+            this.repeater = new ig.PressRepeater()
+        },
         setButtons(...args) {
             args.forEach((btn, i) => btn && this.addFocusGui(btn as ig.FocusGui, 0, i))
+        },
+        focusButtonByRingId(ringId) {
+            for (let i = 0; i < this.elements[0].length; i++) {
+                const button = this.elements[0][i]
+                if (button?.ringId == ringId) {
+                    this.focusCurrentButton(0, i)
+                    break
+                }
+            }
+        },
+        getRepeaterDir(dirVec) {
+            if (dirVec.x > 0.7) return 'e'
+            if (dirVec.x > 0.4 && dirVec.y > 0.4) return 'se'
+            if (dirVec.y > 0.7) return 's'
+            if (dirVec.x < -0.4 && dirVec.y > 0.4) return 'sw'
+            if (dirVec.x < -0.7) return 'w'
+            if (dirVec.x < -0.4 && dirVec.y < -0.4) return 'nw'
+            if (dirVec.y < -0.7) return 'n'
+            if (dirVec.y < -0.4 && dirVec.x > 0.4) return 'ne'
+        },
+        getRepeaterValue(dirVec: Vec2) {
+            const dir = this.getRepeaterDir(dirVec)
+            dir && this.repeater.setDown(dir)
+            return this.repeater.getPressed()
+        },
+        getRingIdFromDir(dir, id) {
+            if (dir == 'n') return id - selGridW * 2
+            if (dir == 'ne') return id - selGridW + 1
+            if (dir == 'e') return id + 1
+            if (dir == 'se') return id + selGridW + 1
+            if (dir == 's') return id + selGridW * 2
+            if (dir == 'sw') return id + selGridW
+            if (dir == 'w') return id - 1
+            if (dir == 'nw') return id - selGridW
+            throw new Error()
         },
         doButtonTraversal(inputRegained, dirOverride?: Vec2) {
             if (!inputRegained || dirOverride) {
@@ -93,25 +139,34 @@ function patchButtonTraversal() {
                 if (Vec2.isZero(dirVec)) return
                 this.lastDir = dirVec
 
-                const ids = getAllIdsFromRing(sc.QuickRingMenu.instance.currentRingIndex)
+                const currentRing = sc.QuickRingMenu.instance.currentRingIndex
+                const ids = getAllIdsFromRing(currentRing)
                 if (ids.length == 0) return
-                const angles = ids.map(id => sc.QuickRingMenu.instance.ringAngles[id].pure)
 
-                const closestIndex = angles.reduce(
-                    (acc: [number, number], vec: Vec2, i: number) => {
-                        const dist = Vec2.distance(dirVec, vec)
-                        if (dist < acc[0]) return [dist, i] as [number, number]
-                        return acc
-                    },
-                    [1000, -1]
-                )[1]
-                const id = ids[closestIndex]
-                for (let i = 0; i < this.elements[0].length; i++) {
-                    const button = this.elements[0][i]
-                    if (button?.ringId == id) {
-                        this.focusCurrentButton(0, i)
-                        break
+                if (currentRing == ringCountToInit) {
+                    const dir = this.getRepeaterValue(dirVec)
+                    const currentButton = this.elements[this.current.x][this.current.y]
+                    const firstId = getIdFromRingPos(ringCountToInit, 0)
+                    let focusedId = currentButton.ringId
+                    if (getRingPosFromId(focusedId).ring != ringCountToInit) focusedId = firstId
+                    if (dirOverride) this.focusButtonByRingId(firstId)
+                    if (dir) {
+                        const id = this.getRingIdFromDir(dir, focusedId)
+                        if (id >= firstId) this.focusButtonByRingId(id)
                     }
+                } else {
+                    const angles = ids.map(id => sc.QuickRingMenu.instance.ringAngles[id].pure)
+
+                    const closestIndex = angles.reduce(
+                        (acc: [number, number], vec: Vec2, i: number) => {
+                            const dist = Vec2.distance(dirVec, vec)
+                            if (dist < acc[0]) return [dist, i] as [number, number]
+                            return acc
+                        },
+                        [1000, -1]
+                    )[1]
+                    const id = ids[closestIndex]
+                    this.focusButtonByRingId(id)
                 }
             }
         },
@@ -121,7 +176,7 @@ function patchButtonTraversal() {
 const localStorageConfigId = 'quickMenuConfig'
 function saveConfig(possibleSelGridIds: number[]) {
     const save = { ...sc.QuickRingMenuWidgets.ringConfiguration }
-    for (const id of possibleIds) {
+    for (const id of Object.keys(save).map(Number)) {
         const name = save[id]
         if (name.startsWith('dummy')) delete save[id]
     }
@@ -188,15 +243,14 @@ export function quickMenuExtension() {
             }
 
             /* the last ring is not accually a ring, but a selection "menu" */
-            const selW = 4
             const selGridPos: Vec2 = { x: 207, y: -80 }
             this.possibleSelGridIds = Object.keys(sc.QuickRingMenuWidgets.widgets)
                 .sort()
                 .map((name, i) => {
                     const id = getIdFromRingPos(ringCountToInit, i)
                     sc.QuickRingMenuWidgets.ringConfiguration[id] = name
-                    const y = Math.floor(i / selW)
-                    const x = (i % selW) + (y % 2) / 2
+                    const y = Math.floor(i / selGridW)
+                    const x = (i % selGridW) + (y % 2) / 2
                     const position = Vec2.create(selGridPos)
                     Vec2.addC(position, x * 33, y * 17)
                     this.ringAngles[id] = { pure: Vec2.create() /* the last ring is a grid, not a ring */, position }
@@ -222,11 +276,12 @@ export function quickMenuExtension() {
         },
         nextRing(add) {
             let maxIte = 10
+            const editModeAdd = this.editModeOn ? 1 : 0
             do {
                 this.currentRingIndex += add
                 if (this.currentRingIndex < 0) {
-                    this.currentRingIndex = ringCountToInit - 1
-                } else if (this.currentRingIndex >= ringCountToInit) {
+                    this.currentRingIndex = ringCountToInit - 1 + editModeAdd
+                } else if (this.currentRingIndex >= ringCountToInit + editModeAdd) {
                     this.currentRingIndex = 0
                 }
                 /* prevent freeze */
