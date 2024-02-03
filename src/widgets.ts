@@ -29,7 +29,7 @@ export function addWidgets() {
     /* jetpack */
     let jetpackOn = false
     // prettier-ignore
-    const keyboardJetpackOn = !(sc.OPTIONS_DEFINITION['keys-jump'] /* CCJetpack */ || sc.OPTIONS_DEFINITION['keys-jetpack'] /* CCSpeedrunUtilities */)
+    const keyboardJetpackOn = !(sc.OPTIONS_DEFINITION['keys-jump'] /* CCJetpack */)
     if (keyboardJetpackOn) ig.input.bind(ig.KEY.CTRL, 'keys-jump')
     ig.ENTITY.Player.inject({
         update() {
