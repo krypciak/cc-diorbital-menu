@@ -29,6 +29,7 @@ declare global {
             possibleSelGridIds: number[]
             editModeOn: boolean
             openendAtLeastOnce: boolean
+            infoBar: sc.InfoBar
 
             onWidgetListUpdate(this: this): void
             createButton(this: this, widget: sc.QuickMenuWidget): sc.RingMenuButton
@@ -245,9 +246,13 @@ export function quickMenuExtension() {
                 const config = getWidgetFromId(button.ringId)
                 if (config?.pressEvent) {
                     config.pressEvent(button)
-                    // this._unfocusAll()
                 }
             })
+
+            this.infoBar = new sc.InfoBar()
+            this.infoBar.setAlign(ig.GUI_ALIGN.X_LEFT, ig.GUI_ALIGN.Y_BOTTOM)
+            this.infoBar.hook.pauseGui = true
+            ig.gui.addGuiElement(this.infoBar)
         },
         onWidgetListUpdate() {
             /* the last ring is not accually a ring, but a selection "menu" */
@@ -275,6 +280,10 @@ export function quickMenuExtension() {
                 this.createButtons(true)
                 this.openendAtLeastOnce = true
             }
+        },
+        exit() {
+            this.parent()
+            this.infoBar.doStateTransition('HIDDEN')
         },
         nextRing(add) {
             let maxIte = 10
@@ -399,10 +408,13 @@ export function quickMenuExtension() {
         enterEditMode() {
             this.editModeOn = true
             this.showDummyButtons()
+            this.infoBar.doStateTransition('DEFAULT')
+            this.infoBar.setText('')
         },
         exitEditMode() {
             this.editModeOn = false
             this.hideDummyButtons()
+            this.infoBar.doStateTransition('HIDDEN')
         },
         showDummyButtons() {
             if (!this.dummyButtonsCreated) {
@@ -447,13 +459,16 @@ export function quickMenuExtension() {
         focusGained() {
             this.parent()
             focusedButton = this
+            const widget = getWidgetFromId(this.ringId)
+            sc.QuickRingMenu.instance.infoBar.setText(`${widget.title}${widget.description ? ` - ${widget.description}` : ''}`)
         },
         focusLost() {
             this.parent()
             focusedButton = undefined
+            sc.QuickRingMenu.instance.infoBar.setText('')
         },
         updateDrawables(renderer) {
-            const widget = sc.QuickRingMenuWidgets.widgets[sc.QuickRingMenuWidgets.ringConfiguration[this.ringId]]
+            const widget = getWidgetFromId(this.ringId)
             // if ('draw' in widget) return widget.draw(renderer, this)
             /* stolen */
             renderer.addGfx(this.gfx, 0, 0, 400, 304, 32, 32)
