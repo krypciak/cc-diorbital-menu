@@ -1,6 +1,6 @@
 {
     "id": "cc-quick-menu-ext",
-    "version": "0.5.0",
+    "version": "1.0.1",
     "title": "Quick menu extensions",
     "description": "Allow other mods to add entries to the quick menu.",
     "plugin": "plugin.js",
