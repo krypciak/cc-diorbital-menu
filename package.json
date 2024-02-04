@@ -1,6 +1,6 @@
 {
-    "name": "cc-quick-menu-ext",
-    "version": "0.5.0",
+    "name": "cc-diorbital-menu",
+    "version": "1.0.1",
     "scripts": {
         "start": "npx esbuild --target=es2018 --format=esm --platform=node --bundle --sourcemap=inline --outfile=plugin.js src/plugin.ts",
         "watch": "npx esbuild --target=es2018 --format=esm --platform=node --bundle --sourcemap=inline --watch --outfile=plugin.js src/plugin.ts",
@@ -8,8 +8,8 @@
         "format": "prettier ./src -w"
     },
     "license": "GPLv3",
-    "ccmodHumanName": "Quick menu extensions",
-    "description": "Quick menu extensions",
+    "ccmodHumanName": "cc-diorbital-menu",
+    "description": "Extends the quick menu",
     "plugin": "plugin.js",
     "ccmodDependencies": {},
     "devDependencies": {
@@ -21,9 +21,7 @@
         "eslint-config-prettier": "^9.1.0",
         "prettier": "3.2.4",
         "typescript": "^5.3.3",
-        "ultimate-crosscode-typedefs": "github:krypciak/ultimate-crosscode-typedefs"
-    },
-    "dependencies": {
+        "ultimate-crosscode-typedefs": "github:krypciak/ultimate-crosscode-typedefs",
         "cc-vim": "github:krypciak/cc-vim"
     }
 }
