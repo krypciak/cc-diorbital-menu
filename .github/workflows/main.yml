@@ -50,7 +50,7 @@ jobs:
                 git config --global user.name "${GITHUB_ACTOR}"
                 git config --global --add safe.directory /github/workspaces
                 git commit -m "$VERSION"
-                git push origin HEAD:master
+                git push origin HEAD:main
 
             - name: Get Changelog Entry
               id: changelog_reader
