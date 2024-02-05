@@ -44,6 +44,7 @@ declare global {
         interface QuickRingMenuWidgets {
             ringConfiguration: Record<number, string>
             widgets: Record<string, sc.QuickMenuWidget>
+            lockLayout: boolean
         }
         interface QuickRingMenuConstructor {
             instance: QuickRingMenu
@@ -210,6 +211,7 @@ export function initExtensionVars() {
             sc.QuickRingMenuWidgets.widgets[key] = widget
         },
         ringConfiguration: loadConfig(),
+        lockLayout: false,
     }
 }
 
@@ -314,7 +316,7 @@ export function quickMenuExtension() {
                 }
 
                 const isGamepad = ig.input.currentDevice == ig.INPUT_DEVICES.GAMEPAD
-                if (isGamepad ? ig.gamepad.isButtonPressed(ig.BUTTONS.FACE2 /* x */) : ig.input.pressed('dash') /* right click */) {
+                if (!sc.QuickRingMenuWidgets.lockLayout && isGamepad ? ig.gamepad.isButtonPressed(ig.BUTTONS.FACE2 /* x */) : ig.input.pressed('dash') /* right click */) {
                     if (!this.selectedToMoveButton) {
                         if (this.editModeOn) {
                             this.selectedToMoveButton = focusedButton
