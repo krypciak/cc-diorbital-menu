@@ -8,10 +8,10 @@
         "format": "prettier ./src -w"
     },
     "license": "GPLv3",
+    "homepage": "https://github.com/krypciak/cc-diorbital-menu",
     "ccmodHumanName": "cc-diorbital-menu",
     "description": "Extends the quick menu",
     "plugin": "plugin.js",
-    "ccmodDependencies": {},
     "devDependencies": {
         "@types/node": "^11.6.0",
         "@typescript-eslint/eslint-plugin": "^6.20.0",

@@ -4,6 +4,7 @@
     "title": "cc-diorbital-menu",
     "description": "Extends the quick menu",
     "plugin": "plugin.js",
+    "homepage": "https://github.com/krypciak/cc-diorbital-menu",
     "icons": {
         "24": "icon/icon.png"
     },
