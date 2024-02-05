@@ -64,7 +64,7 @@ function angleVec(angle: number): Vec2 {
     }
 }
 
-function getIdFromRingPos(ring: number, index: number): number {
+export function getIdFromRingPos(ring: number, index: number): number {
     return ring * 1000 + index
 }
 
