@@ -200,6 +200,8 @@ function loadConfig(): Record<number, string> {
     )
 }
 
+let lockLayout: boolean = false
+
 export function initExtensionVars() {
     // @ts-expect-error
     window.sc = {}
@@ -211,7 +213,13 @@ export function initExtensionVars() {
             sc.QuickRingMenuWidgets.widgets[key] = widget
         },
         ringConfiguration: loadConfig(),
-        lockLayout: false,
+        set lockLayout(value: boolean) {
+            lockLayout = value
+            sc.QuickRingMenu.instance.createButtons(true)
+        },
+        get lockLayout(): boolean {
+            return lockLayout
+        },
     }
 }
 
@@ -316,7 +324,9 @@ export function quickMenuExtension() {
                 }
 
                 const isGamepad = ig.input.currentDevice == ig.INPUT_DEVICES.GAMEPAD
-                if (!sc.QuickRingMenuWidgets.lockLayout && isGamepad ? ig.gamepad.isButtonPressed(ig.BUTTONS.FACE2 /* x */) : ig.input.pressed('dash') /* right click */) {
+                if (
+                    !sc.QuickRingMenuWidgets.lockLayout && isGamepad ? ig.gamepad.isButtonPressed(ig.BUTTONS.FACE2 /* x */) : ig.input.pressed('dash') /* right click */
+                ) {
                     if (!this.selectedToMoveButton) {
                         if (this.editModeOn) {
                             this.selectedToMoveButton = focusedButton
