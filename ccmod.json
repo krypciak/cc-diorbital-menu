@@ -1,6 +1,6 @@
 {
     "id": "cc-diorbital-menu",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "title": "cc-diorbital-menu",
     "description": "Extends the quick menu",
     "plugin": "plugin.js",
