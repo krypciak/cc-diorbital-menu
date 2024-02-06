@@ -41,11 +41,12 @@ declare global {
             hideDummyButtons(this: this): void
             nextRing(this: this, add: number): void
         }
-        interface QuickRingMenuWidgets {
+        interface QuickRingMenuWidgets extends sc.Model {
             ringConfiguration: Record<number, string>
             widgets: Record<string, sc.QuickMenuWidget>
             lockLayout: boolean
         }
+
         interface QuickRingMenuConstructor {
             instance: QuickRingMenu
         }
@@ -206,6 +207,7 @@ export function initExtensionVars() {
     // @ts-expect-error
     window.sc = {}
     sc.QuickRingMenuWidgets = {
+        observers: [],
         widgets: {},
         addWidget: (widget: sc.QuickMenuWidget) => {
             const key = widget.key ?? widget.name
@@ -220,6 +222,9 @@ export function initExtensionVars() {
         get lockLayout(): boolean {
             return lockLayout
         },
+    }
+    sc.QUICK_MENU_WIDGET_EVENT = {
+        CLICK: 0,
     }
 }
 
@@ -255,6 +260,7 @@ export function quickMenuExtension() {
                 const button = button1 as sc.RingMenuButton
                 const config = getWidgetFromId(button.ringId)
                 if (config?.pressEvent) {
+                    sc.Model.notifyObserver(sc.QuickRingMenuWidgets, sc.QUICK_MENU_WIDGET_EVENT.CLICK, config)
                     config.pressEvent(button)
                 }
             })

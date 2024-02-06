@@ -1,6 +1,10 @@
 export {}
 declare global {
     namespace sc {
+        enum QUICK_MENU_WIDGET_EVENT {
+            CLICK = 0,
+        }
+
         type QuickMenuWidgetImageConfig = (button: sc.RingMenuButton) => {
             gfx: ig.Image
             pos: Vec2
@@ -25,7 +29,7 @@ declare global {
             | {}
         )
 
-        interface QuickRingMenuWidgets {
+        interface QuickRingMenuWidgets extends sc.Model {
             addWidget(widget: sc.QuickMenuWidget): void
         }
         var QuickRingMenuWidgets: QuickRingMenuWidgets
