@@ -1,5 +1,10 @@
 <!-- markdownlint-disable MD013 MD024 MD001 MD045 -->
 
+# FUNCTIONALITY MIGRATED TO [CCUILib](https://github.com/conorlawton/nax-ccuilib)
+# PLEASE DO NOT USE THIS!!!
+
+Original `README.md`:
+
 # Quick menu extension
 
 https://github.com/krypciak/cc-diorbital-menu/assets/115574014/a359412f-6359-481c-bc80-d7be821e1970
